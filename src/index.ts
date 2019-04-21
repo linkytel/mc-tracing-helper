@@ -7,12 +7,17 @@ import { ExpressHelper } from './ExpressHelper';
 import * as MysqlHelper from './MysqlHelper';
 import { startChild } from './tracingCore';
 
+export interface ExporterOptions {
+  url?: string;
+  serviceName: string;
+}
+
 export const mysqlTraceWrapper = MysqlHelper;
 
-export const tracingSetup = (zipkinUrl: string, serviceName: string) => {
+export const tracingSetup = (config: ExporterOptions) => {
   const zipkinOptions = {
-    url: zipkinUrl,
-    serviceName: serviceName,
+    url: config.url,
+    serviceName: config.serviceName,
   };
   const exporter = new ZipkinTraceExporter(zipkinOptions);
   tracing.registerExporter(exporter).start();

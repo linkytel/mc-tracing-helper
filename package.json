@@ -1,6 +1,6 @@
 {
   "name": "mc-tracing-helper",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "MBXC tracing helper for node server",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
