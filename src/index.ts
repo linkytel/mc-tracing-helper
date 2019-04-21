@@ -1,3 +1,4 @@
+import { Span } from "@opencensus/core";
 import { Response, RequestHandler } from 'express';
 import { ZipkinTraceExporter } from 'mc-exporter-zipkin';
 import * as tracing from '@opencensus/nodejs';
@@ -17,16 +18,21 @@ export const tracingSetup = (zipkinUrl: string, serviceName: string) => {
   tracing.registerExporter(exporter).start();
 }
 
-export const requestTraceWrapper = (options: any, req: any, res: any): Promise<any> => {
-  const childSpan = startChild('response recevied', req.rootSpan);
-  ExpressHelper.injectHeader(childSpan, options);
+export const requestTraceWrapper = (options: any, req: any): Promise<any> => {
+  let childSpan: Span;
+  if (req.rootSpan) {
+    childSpan = startChild('response recevied', req.rootSpan);
+    ExpressHelper.injectHeader(childSpan, options);
+  }
   return new Promise((resolve) => {
     request(options, (err: any, response: any, data: any) => {
       try {
-        ExpressHelper.addResponseTags(childSpan, res);
-        resolve({ err, response, data });
+        ExpressHelper.addResponseTags(childSpan, response);
       } finally {
-        childSpan.end();
+        if (childSpan) {
+          childSpan.end();
+        }
+        resolve({ err, response, data });
       }
     })
   });
