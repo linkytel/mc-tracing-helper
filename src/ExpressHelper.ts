@@ -7,7 +7,7 @@ import { addAttributes } from './tracingCore';
 export class ExpressHelper {
   static startRoot(req: Request) {
     return new Promise((resolve) => {
-      const spanOptions = { name: req.url } as any;
+      const spanOptions = { name: `req:${req.url}` } as any;
       const traceparent = req.headers.traceparent;
       if (traceparent) {
         const traceContext = new TraceContextFormat();
@@ -19,7 +19,7 @@ export class ExpressHelper {
         spanOptions.spanContext = traceContext;
       }
       tracing.tracer.startRootSpan(spanOptions, (rootSpan: RootSpan) => {
-        ExpressHelper.addRequestTags(rootSpan, req);
+        ExpressHelper.addRouterTags(rootSpan, req);
         resolve(rootSpan);
       });
     });
@@ -38,18 +38,20 @@ export class ExpressHelper {
     }, span.spanContext);
   }
 
+  static addRouterTags(span: Span, req: Request) {
+    addAttributes(span, {
+      'req.uid': req.headers['x-auth-uid'],
+      'http.host': req.host,
+    })
+  }
   static addRequestTags(span: Span, req: Request) {
     const { headers } = req;
     addAttributes(span, {
       'http.user_agent': headers.user_agent || '',
       'http.path': req.url || '',
       'http.method': req.method,
-      'http.host': req.host,
-      'request.uid': req.headers['x-auth-nick'],
-      'request.nick': req.headers['x-auth-nick'],
     })
   }
-
   static addResponseTags(span: Span, res: Response) {
     addAttributes(span, {
       'http.status_code': res.statusCode || '',

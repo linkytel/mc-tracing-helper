@@ -23,23 +23,22 @@ export const tracingSetup = (config: ExporterOptions) => {
   tracing.registerExporter(exporter).start();
 }
 
-export const requestTraceWrapper = (options: any, req: any): Promise<any> => {
-  let childSpan: Span;
+export const requestTraceWrapper = (options: any, callback: Function, req: any): any => {
+  let reqSpan: Span;
+  let resSpan: Span;
   if (req.rootSpan) {
-    childSpan = startChild('response recevied', req.rootSpan);
-    ExpressHelper.injectHeader(childSpan, options);
+    reqSpan = startChild('request', req.rootSpan);
+    ExpressHelper.addRequestTags(reqSpan, req);
+    ExpressHelper.injectHeader(reqSpan, options);
+    reqSpan.end();
   }
-  return new Promise((resolve) => {
-    request(options, (err: any, response: any, data: any) => {
-      try {
-        ExpressHelper.addResponseTags(childSpan, response);
-      } finally {
-        if (childSpan) {
-          childSpan.end();
-        }
-        resolve({ err, response, data });
-      }
-    })
+  return request(options, (err: any, response: any, data: any) => {
+    if (req.rootSpan) {
+      resSpan = startChild('response', req.rootSpan);
+      ExpressHelper.addResponseTags(resSpan, response);
+      resSpan.end();
+    }
+    callback(err, response, data);
   });
 }
 
