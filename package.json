@@ -1,0 +1,49 @@
+{
+  "name": "mc-tracing-helper",
+  "version": "0.0.1",
+  "description": "MBXC tracing helper for node server",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
+  "scripts": {
+    "clean": "rimraf build/*",
+    "compile": "tsc -p .",
+    "fix": "gts fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/linkytel/mc-tracing-helper.git"
+  },
+  "author": "mc.leon",
+  "license": "ISC",
+  "engines": {
+    "node": ">=6.0"
+  },
+  "files": [
+    "build/src/**/*.js",
+    "build/src/**/*.d.ts",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.12",
+    "ts-node": "^8.0.0",
+    "typescript": "~3.2.0"
+  },
+  "dependencies": {
+    "@opencensus/core": "0.0.11",
+    "@opencensus/nodejs": "^0.0.11",
+    "@opencensus/propagation-tracecontext": "^0.0.11",
+    "@types/express": "^4.16.1",
+    "@types/request": "^2.48.1",
+    "express": "^4.16.4",
+    "gts": "^0.9.0",
+    "mc-exporter-zipkin": "^0.0.2",
+    "mc-mysql-wrapper": "^0.0.3",
+    "request": "^2.88.0",
+    "rimraf": "^2.6.3"
+  }
+}

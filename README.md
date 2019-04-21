@@ -1,1 +1,1 @@
-# mc-tracing-helper
+# mc-exporter-zipkin
