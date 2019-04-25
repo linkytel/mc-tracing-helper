@@ -11,7 +11,7 @@ export interface TraceMySqlConfig {
 export const defaultConfig = (): TraceMySqlConfig => {
   return {
     onReady: (rootSpan: RootSpan, name: string, args: any) => {
-      const span = startChild(`router:${name}`, rootSpan);
+      const span = startChild(`db:${name}`, rootSpan);
       addAttributes(span, {
         'db.statement': args.sql,
         'db.params': args.values,
@@ -19,13 +19,17 @@ export const defaultConfig = (): TraceMySqlConfig => {
       return span;
     },
     onExecute: (spanContext: Span, data: any) => {
-      spanContext.end();
+      if (spanContext) {
+        spanContext.end();
+      }
     },
     onError: (spanContext: Span, err: Error) => {
-      addAttributes(spanContext, {
-        'db.error': (err || {}).message,
-      });
-      spanContext.end();
+      if (spanContext) {
+        addAttributes(spanContext, {
+          'db.error': (err || {}).message,
+        });
+        spanContext.end();
+      }
     }
   };
 };

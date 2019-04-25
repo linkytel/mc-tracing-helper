@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Span, RootSpan } from "@opencensus/core";
 import * as tracing from '@opencensus/nodejs';
 import { TraceContextFormat } from '@opencensus/propagation-tracecontext';
-import { addAttributes } from './tracingCore';
+import { addAttributes, addAnnotation } from './tracingCore';
 import logger from './logger';
 
 export class ExpressHelper {
@@ -19,7 +19,6 @@ export class ExpressHelper {
         });
       }
       tracing.tracer.startRootSpan(spanOptions, (rootSpan: RootSpan) => {
-        ExpressHelper.addRouterTags(rootSpan, req);
         resolve(rootSpan);
       });
       logger.info(`root spanOptions:`, spanOptions, '\n req.headers:', req.headers);
@@ -33,41 +32,46 @@ export class ExpressHelper {
     const tcFormat = new TraceContextFormat();
     tcFormat.inject({
       setHeader: (name: string, value: string) => {
+        if (!options.headers) {
+          options.headers = {};
+        }
         options.headers[name] = value;
       },
     }, span.spanContext);
   }
 
-  static addRouterTags(span: Span, req: Request) {
-    addAttributes(span, {
-      'req.uid': req.headers['x-auth-uid'],
-    })
-  }
-
-  static addHttpTags(span: Span, req: Request, res: Response, data: any) {
+  static addHttpTags(span: Span, options: any, req: any, res: Response, data: any) {
     const { headers } = req;
-    const attrs = {
-      'http.status_code': res.statusCode || '',
-      'http.path': req.url || '',
-      'http.method': req.method,
+    const rootAttrs = {
       'http.host': req.host,
+    } as any;
+    const childAttrs = {
+      'http.status_code': res.statusCode || '',
+      'http.path': options.url || '',
+      'http.method': options.method,
     } as any;
     const uid = headers['x-auth-uid'];
     const nick = headers['x-auth-nick'] as string;
     if (uid) {
-      attrs['req.uid'] = uid;
+      rootAttrs['req.uid'] = uid;
     }
 
     if (nick) {
-      attrs['req.nick'] = decodeURIComponent(nick);
+      rootAttrs['req.nick'] = decodeURIComponent(nick);
     }
     try {
-      const responseText = typeof data === "string" ? data : JSON.stringify(data);
-      if (res.statusCode != 200 && responseText) {
-        attrs['http.error'] = responseText;
+      const { statusCode } = res;
+      if (statusCode != 200) {
+        const responseText = typeof data === "string" ? data : JSON.stringify(data);
+        rootAttrs['error'] = 1;
+        childAttrs['error'] = 1;
+        addAttributes(span, childAttrs);
+        if (responseText) {
+          addAnnotation(span, responseText)
+        }
       }
     } finally {
-      addAttributes(span, attrs);
+      addAttributes(req.rootSpan, rootAttrs);
     }
   }
 }

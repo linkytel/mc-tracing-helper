@@ -7,12 +7,15 @@ interface TopClientStream {
 }
 
 function addTopAttrs(childSpan: Span, method: string, args: any, _err?: any) {
-  addAttributes(childSpan, {
-    'top.method': method,
-    'top.args': args,
-    'top.error': _err && _err.message || '',
-  });
+  const attrs = {
+    'top.args': JSON.stringify(args),
+  } as any;
+  if (_err && _err.message) {
+    attrs['top.error'] = _err.message;
+  }
+  addAttributes(childSpan, attrs);
 }
+
 function wrapCallback(method: string, args: any, _err: any, _data: any, callback: Function, childSpan: Span) {
   addTopAttrs(childSpan, method, args, _err);
   childSpan.end();
@@ -26,19 +29,19 @@ export class TraceTopClient {
   }
 
   execute(rootSpan: RootSpan, method: string, args: any, callback: (err: any, data: any) => void) {
-    const childSpan = startChild('top:', rootSpan);
+    const childSpan = startChild(`top:${method}`, rootSpan);
     this.instance.execute(method, args, (_err: any, _data: any) => {
       wrapCallback(method, args, _err, _data, callback, childSpan);
     });
   }
   executeType(rootSpan: RootSpan, method: string, args: any, type: string, callback: (err: any, data: any) => void) {
-    const childSpan = startChild('top:', rootSpan);
+    const childSpan = startChild(`top:${method}`, rootSpan);
     this.instance.execute(method, args, type, (_err: any, _data: any) => {
       wrapCallback(method, args, _err, _data, callback, childSpan);
     });
   }
   executePromise(rootSpan: RootSpan, method: string, args: any, type?: string): Promise<any> & TopClientStream {
-    const childSpan = startChild('top:', rootSpan);
+    const childSpan = startChild(`top:${method}`, rootSpan);
     return this.instance.execute(method, args, type).then((data: any) => {
       addTopAttrs(childSpan, method, args);
       childSpan.end();

@@ -1,6 +1,6 @@
 {
   "name": "mc-tracing-helper",
-  "version": "0.1.6",
+  "version": "0.3.6",
   "description": "MBXC tracing helper for node server",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
@@ -42,7 +42,7 @@
     "@types/winston": "^2.4.4",
     "express": "^4.16.4",
     "gts": "^0.9.0",
-    "mc-exporter-zipkin": "^0.0.2",
+    "mc-exporter-zipkin": "0.0.5",
     "mc-mysql-wrapper": "^0.0.3",
     "request": "^2.88.0",
     "rimraf": "^2.6.3",

@@ -1,4 +1,4 @@
-import { Span, RootSpan } from "@opencensus/core";
+import { Span, RootSpan, logger, Logger } from "@opencensus/core";
 import { Response, RequestHandler } from 'express';
 import { ZipkinTraceExporter } from 'mc-exporter-zipkin';
 import * as tracing from '@opencensus/nodejs';
@@ -10,14 +10,16 @@ import { startChild, addAttributes } from './tracingCore';
 var captureMySQL = require("mc-mysql-wrapper");
 
 export interface ExporterOptions {
-  url?: string;
+  url: string;
   serviceName: string;
+  logger?: Logger,
 }
 
 export const tracingSetup = (config: ExporterOptions) => {
   const zipkinOptions = {
     url: config.url,
     serviceName: config.serviceName,
+    logger: config.logger || logger.logger({ level: 'error' })
   };
   const exporter = new ZipkinTraceExporter(zipkinOptions);
   tracing.registerExporter(exporter).start();
@@ -33,15 +35,18 @@ export const expressMiddleware: RequestHandler = (req: any, res: Response, next:
   });
 }
 
-export const requestTraceWrapper = (options: any, callback: Function, req: any): any => {
+export const requestTraceWrapper = (options: any, callback: Function, req: any, res?: any): any => {
   let resSpan: Span;
   if (req.rootSpan) {
-    resSpan = startChild('response', req.rootSpan);
+    resSpan = startChild('request', req.rootSpan);
     ExpressHelper.injectHeader(resSpan, options);
   }
   return request(options, (err: any, response: any, data: any) => {
+    if (res && response.headers.traceparent) {
+      res.header('traceparent', response.headers.traceparent);
+    }
     if (resSpan) {
-      ExpressHelper.addHttpTags(resSpan, req, response, data);
+      ExpressHelper.addHttpTags(resSpan, options, req, response, data);
       resSpan.end();
     }
     callback(err, response, data);
@@ -62,3 +67,5 @@ export class TopClient extends TraceTopClient { };
 export const startChildSpan = (name: string, rootSpan: RootSpan) => (startChild(name, rootSpan));
 
 export const addSpanAttributes = (span: Span, dict: any) => (addAttributes(span, dict));
+
+export const injectHeader = ExpressHelper.injectHeader;
